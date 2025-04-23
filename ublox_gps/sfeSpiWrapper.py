@@ -30,10 +30,11 @@
 # pylint: disable=line-too-long, bad-whitespace, invalid-name, too-many-public-methods
 #
 
+from __future__ import absolute_import
 import spidev
 
 class sfeSpiWrapper(object):
-    """
+    u"""
     sfeSpiWrapper
 
     Initialize the library with the given port.
@@ -56,10 +57,10 @@ class sfeSpiWrapper(object):
 
         self.spi_port.open(0,0)
         self.spi_port.max_speed_hz = 5500 #Hz
-        self.spi_port.mode = 0b00
+        self.spi_port.mode = __builtins__.long("00", 2)
 
     def read(self, read_data = 1):
-        """
+        u"""
         Reads a byte or bytes of data from the SPI port. The bytes are
         converted to a bytes object before being returned.
 
@@ -68,13 +69,13 @@ class sfeSpiWrapper(object):
         """
 
         data = self.spi_port.readbytes(read_data)
-        byte_data = bytes([])
+        byte_data = str([])
         for d in data:
-            byte_data = byte_data + bytes([d])
+            byte_data = byte_data + str([d])
         return byte_data
 
     def write(self, data):
-        """
+        u"""
         Writes a byte or bytes of data to the SPI port.
 
         :return: True on completion

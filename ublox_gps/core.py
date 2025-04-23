@@ -1,24 +1,25 @@
 #This code is based on the work by daylomople (https://github.com/dalymople) and the awesome parsing capabilities of ubxtranslator (https://github.com/dalymople/ubxtranslator). 
-"""The core structure definitions"""
+u"""The core structure definitions"""
 
+from __future__ import absolute_import
 import struct
 from collections import namedtuple
-from typing import List, Iterator, Union
+#from typing import List, Iterator, Union
 
-__all__ = ['PadByte', 'Field', 'Flag', 'BitField', 'RepeatedBlock', 'Message', 'Cls', 'Parser', ]
+__all__ = [u'PadByte', u'Field', u'Flag', u'BitField', u'RepeatedBlock', u'Message', u'Cls', u'Parser', ]
 
 
-class PadByte:
-    """A padding byte, used for padding the messages.
+class PadByte(object):
+    u"""A padding byte, used for padding the messages.
 
     The number of repeats needs to be used carefully...
     If you want 6 total pad bytes, the pad byte is repeated 5 times.
 
     If this proves confusing it may be changed in the future.
     """
-    __slots__ = ['repeat', ]
+    __slots__ = [u'repeat', ]
 
-    def __init__(self, repeat: int = 0):
+    def __init__(self, repeat = 0):
         self.repeat = repeat
 
     @property
@@ -27,17 +28,17 @@ class PadByte:
 
     @property
     def fmt(self):
-        """Return the format char for use with the struct package"""
-        return 'x' * (self.repeat + 1)
+        u"""Return the format char for use with the struct package"""
+        return u'x' * (self.repeat + 1)
 
     @staticmethod
-    def parse(_it: Iterator):
-        """Discard the padding bytes"""
+    def parse(_it):
+        u"""Discard the padding bytes"""
         return None, None
 
 
-class Field:
-    """A field type that is used to describe most `normal` fields.
+class Field(object):
+    u"""A field type that is used to describe most `normal` fields.
 
     The descriptor code is as per the uBlox data sheet available;
     https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
@@ -46,23 +47,23 @@ class Field:
 
     In future that support may be added but it would probably use a different field constructor...
     """
-    __types__ = {'U1': 'B', 'I1': 'b',
-                 'U2': 'H', 'I2': 'h',
-                 'U4': 'I', 'I4': 'i', 'R4': 'f',
-                 'R8': 'd', 'C': 'c', 'S': 's'}
-    __slots__ = ['name', '_type', '_len']
+    __types__ = {u'U1': u'B', u'I1': u'b',
+                 u'U2': u'H', u'I2': u'h',
+                 u'U4': u'I', u'I4': u'i', u'R4': u'f',
+                 u'R8': u'd', u'C': u'c', u'S': u's'}
+    __slots__ = [u'name', u'_type', u'_len']
 
-    def __init__(self, name: str, type_: str, len_: int = 1):
+    def __init__(self, name, type_, len_ = 1):
         self.name = name
 
         if (len_ is None or len_ < 0):
-            ValueError('The provided _len is not valid')
+            ValueError(u'The provided _len is not valid')
 
 
         self._len = len_
 
         if type_ not in Field.__types__:
-            raise ValueError('The provided _type of {} is not valid'.format(type_))
+            raise ValueError(u'The provided _type of {} is not valid'.format(type_))
         self._type = type_
 
     @property
@@ -71,35 +72,35 @@ class Field:
 
     @property
     def fmt(self):
-        """Return the format char for use with the struct package"""
+        u"""Return the format char for use with the struct package"""
 
-        return (str(self._len) if self._len > 1 else '') + Field.__types__[self._type]
+        return (unicode(self._len) if self._len > 1 else u'') + Field.__types__[self._type]
 
-    def parse(self, it: Iterator) -> tuple:
-        """Return a tuple representing the provided value/s"""
+    def parse(self, it):
+        u"""Return a tuple representing the provided value/s"""
         resp = []
-        len = 1 if self._type == 'S' else self._len
+        len = 1 if self._type == u'S' else self._len
 
-        for i in range(0, len):
-            resp.append(next(it))
+        for i in xrange(0, len):
+            resp.append(it.next())
 
-        if self._type in ['U1', 'I1', 'U2', 'I2', 'U4', 'I4', ]:
-            for i in range(0, len):
+        if self._type in [u'U1', u'I1', u'U2', u'I2', u'U4', u'I4', ]:
+            for i in xrange(0, len):
                 resp[i] = int(resp[i])
-        elif self._type == 'R4':
-            for i in range(0, len):
+        elif self._type == u'R4':
+            for i in xrange(0, len):
                 resp[i] = float(resp[i])
-        elif self._type == 'R8':
-            for i in range(0, len):
+        elif self._type == u'R8':
+            for i in xrange(0, len):
                 resp[i] = double(resp[i])
-        elif self._type == 'S':
-            resp = [resp[0].decode('ascii').rstrip('\0')]
+        elif self._type == u'S':
+            resp = [resp[0].decode(u'ascii').rstrip(u'\0')]
 
         return self.name, resp[0] if len == 1 else resp
 
 
-class Flag:
-    """A flag within a bit field.
+class Flag(object):
+    u"""A flag within a bit field.
 
     The start and stop indexes are used in a similar way to list indexing.
     They are zero indexed and the stop is exclusive.
@@ -111,34 +112,34 @@ class Flag:
     strict checking is done within classes that use this. For example you can set a
     start and stop > 8 even if the bit field is only 8 bits wide.
     """
-    __slots__ = ['name', '_start', '_stop', '_mask', ]
+    __slots__ = [u'name', u'_start', u'_stop', u'_mask', ]
 
-    def __init__(self, name: str, start: int, stop: int):
+    def __init__(self, name, start, stop):
         self.name = name
 
         if 0 > start:
-            raise ValueError('The start index must be greater than 0 not {}'.format(start))
+            raise ValueError(u'The start index must be greater than 0 not {}'.format(start))
 
         if start > stop:
-            raise ValueError('The start index, {}, must be higher than the stop index, {}'.format(start, stop))
+            raise ValueError(u'The start index, {}, must be higher than the stop index, {}'.format(start, stop))
 
         if stop > 4 * 8:
-            raise ValueError('The stop index must be less than 4 bytes wide not {}'.format(stop))
+            raise ValueError(u'The stop index must be less than 4 bytes wide not {}'.format(stop))
 
         self._start = start
         self._stop = stop
 
         self._mask = 0x00
-        for i in range(start, stop):
+        for i in xrange(start, stop):
             self._mask |= 0x01 << i
 
-    def parse(self, value) -> tuple:
-        """Return a tuple representing the provided value"""
+    def parse(self, value):
+        u"""Return a tuple representing the provided value"""
         return self.name, (value & self._mask) >> self._start
 
 
-class BitField:
-    """A bit field type made up of flags.
+class BitField(object):
+    u"""A bit field type made up of flags.
 
     The bit field uses the types described within the uBlox data sheet:
     https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
@@ -150,29 +151,29 @@ class BitField:
 
     """
 
-    __slots__ = ['name', '_type', '_subfields', '_nt', ]
-    __types__ = {'X1': 'B', 'X2': 'H', 'X4': 'I'}
+    __slots__ = [u'name', u'_type', u'_subfields', u'_nt', ]
+    __types__ = {u'X1': u'B', u'X2': u'H', u'X4': u'I'}
 
     # noinspection PyProtectedMember
-    def __init__(self, name: str, type_: str, subfields: List[Flag]):
+    def __init__(self, name, type_, subfields):
         self.name = name
 
         if type_ not in BitField.__types__:
-            raise ValueError('The provided _type of {} is not valid'.format(type_))
+            raise ValueError(u'The provided _type of {} is not valid'.format(type_))
         self._type = type_
 
         self._subfields = subfields
 
-        if type_ == 'X1':
+        if type_ == u'X1':
             width = 1
-        elif type_ == 'X2':
+        elif type_ == u'X2':
             width = 2
         else:
             width = 4
 
         for sf in subfields:
             if sf._stop > (width * 8):
-                raise ValueError('{} stop index of {} is wider than the implicit width of {} bytes'.format(
+                raise ValueError(u'{} stop index of {} is wider than the implicit width of {} bytes'.format(
                     sf.__class__.__name__, sf._stop, width
                 ))
 
@@ -183,27 +184,27 @@ class BitField:
         return False
 
     @property
-    def fmt(self) -> str:
-        """Return the format char for use with the struct package"""
+    def fmt(self):
+        u"""Return the format char for use with the struct package"""
         return BitField.__types__[self._type]
 
-    def parse(self, it: Iterator) -> namedtuple:
-        """Return a named tuple representing the provided value"""
-        value = next(it)
-        return self.name, self._nt(**{k: v for k, v in [x.parse(value) for x in self._subfields]})
+    def parse(self, it):
+        u"""Return a named tuple representing the provided value"""
+        value = it.next()
+        return self.name, self._nt(**dict((k, v) for k, v in [x.parse(value) for x in self._subfields]))
 
 
-class RepeatedBlock:
-    """Defines a repeated block of Fields within a UBX Message
+class RepeatedBlock(object):
+    u"""Defines a repeated block of Fields within a UBX Message
 
     """
-    __slots__ = ['name', '_fields', 'repeat', '_nt', ]
+    __slots__ = [u'name', u'_fields', u'repeat', u'_nt', ]
 
-    def __init__(self, name: str, fields: List[Union[Field, BitField, PadByte]]):
+    def __init__(self, name, fields):
         self.name = name
         self._fields = fields
         self.repeat = 0
-        self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, 'name')])
+        self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, u'name')])
 
     @property
     def repeated_block(self):
@@ -211,20 +212,20 @@ class RepeatedBlock:
 
     @property
     def fmt(self):
-        """Return the format string for use with the struct package."""
-        return ''.join([field.fmt for field in self._fields]) * (self.repeat + 1)
+        u"""Return the format string for use with the struct package."""
+        return u''.join([field.fmt for field in self._fields]) * (self.repeat + 1)
 
-    def parse(self, it: Iterator) -> tuple:
-        """Return a tuple representing the provided value/s"""
+    def parse(self, it):
+        u"""Return a tuple representing the provided value/s"""
         resp = []
-        for i in range(self.repeat + 1):
-            resp.append(self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None}))
+        for i in xrange(self.repeat + 1):
+            resp.append(self._nt(**dict((k, v) for k, v in [f.parse(it) for f in self._fields] if k is not None)))
 
         return self.name, resp
 
 
-class Message:
-    """Defines a UBX message.
+class Message(object):
+    u"""Defines a UBX message.
 
     The Messages are described in the data sheet:
     https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
@@ -239,39 +240,39 @@ class Message:
     will raise a ValueError
 
     """
-    __slots__ = ['_id', 'name', '_fields', '_nt', '_repeated_block', ]
+    __slots__ = [u'_id', u'name', u'_fields', u'_nt', u'_repeated_block', ]
 
-    def __init__(self, id_: int, name: str, fields: list):
+    def __init__(self, id_, name, fields):
         if id_ < 0:
-            raise ValueError('The _id must be >= 0, not {}'.format(id_))
+            raise ValueError(u'The _id must be >= 0, not {}'.format(id_))
 
         if id_ > 0xFF:
-            raise ValueError('The _id must be <= 0xFF, not {}'.format(id_))
+            raise ValueError(u'The _id must be <= 0xFF, not {}'.format(id_))
 
         self._id = id_
         self.name = name
         self._fields = fields
-        self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, 'name')])
+        self._nt = namedtuple(self.name, [f.name for f in self._fields if hasattr(f, u'name')])
         self._repeated_block = None
 
         for field in fields:
             if field.repeated_block:
                 if self._repeated_block is not None:
-                    raise ValueError('Cannot assign multiple repeated blocks to a message.')
+                    raise ValueError(u'Cannot assign multiple repeated blocks to a message.')
                 self._repeated_block = field
 
     @property
     def id_(self):
-        """Public read only access to the message id"""
+        u"""Public read only access to the message id"""
         return self._id
 
     @property
     def fmt(self):
-        """Return the format string for use with the struct package."""
-        return ''.join([field.fmt for field in self._fields])
+        u"""Return the format string for use with the struct package."""
+        return u''.join([field.fmt for field in self._fields])
 
-    def parse(self, payload: bytes) -> namedtuple:
-        """Return a named tuple parsed from the provided payload.
+    def parse(self, payload):
+        u"""Return a named tuple parsed from the provided payload.
 
         If the provided payload is not the same length as what is implied by the format string
         then a ValueError is raised.
@@ -291,22 +292,22 @@ class Message:
                 break
 
             if fmt_len > payload_len:
-                raise ValueError('The payload length does not match the length implied by the message fields. ' +
-                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
+                raise ValueError(u'The payload length does not match the length implied by the message fields. ' +
+                                 u'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
 
             try:
                 self._repeated_block.repeat += 1
             except AttributeError:
-                raise ValueError('The payload length does not match the length implied by the message fields. ' +
-                                 'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
+                raise ValueError(u'The payload length does not match the length implied by the message fields. ' +
+                                 u'Expected {} actual {}'.format(struct.calcsize(self.fmt), len(payload)))
 
         it = iter(struct.unpack(self.fmt, payload))
 
-        return self.name, self._nt(**{k: v for k, v in [f.parse(it) for f in self._fields] if k is not None})
+        return self.name, self._nt(**dict((k, v) for k, v in [f.parse(it) for f in self._fields] if k is not None))
 
 
-class Cls:
-    """Defines a UBX message class.
+class Cls(object):
+    u"""Defines a UBX message class.
 
     The Classes are described in the data sheet:
     https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29_Public.pdf
@@ -315,14 +316,14 @@ class Cls:
 
     The id_ should not be modified after registering the class with the parser.
     """
-    __slots__ = ['_id', 'name', '_messages', ]
+    __slots__ = [u'_id', u'name', u'_messages', ]
 
-    def __init__(self, id_: int, name: str, messages: List[Message]):
+    def __init__(self, id_, name, messages):
         if id_ < 0:
-            raise ValueError('The _id must be >= 0, not {}'.format(id_))
+            raise ValueError(u'The _id must be >= 0, not {}'.format(id_))
 
         if id_ > 0xFF:
-            raise ValueError('The _id must be <= 0xFF, not {}'.format(id_))
+            raise ValueError(u'The _id must be <= 0xFF, not {}'.format(id_))
 
         self._id = id_
 
@@ -334,27 +335,27 @@ class Cls:
 
     @property
     def id_(self):
-        """Public read only access to the class id"""
+        u"""Public read only access to the class id"""
         return self._id
 
     def __contains__(self, item):
         return self._messages.__contains__(item)
 
-    def __getitem__(self, item) -> Message:
+    def __getitem__(self, item):
         try:
             return self._messages[item]
         except KeyError:
-            raise KeyError("A message of id {} has not been registered within {!r}".format(
+            raise KeyError(u"A message of id {} has not been registered within {!r}".format(
                 item, self
             ))
 
-    def register_msg(self, msg: Message):
-        """Register a message type."""
+    def register_msg(self, msg):
+        u"""Register a message type."""
         # noinspection PyProtectedMember
         self._messages[msg._id] = msg
 
     def parse(self, msg_id, payload):
-        """Return a named tuple parsed from the provided payload.
+        u"""Return a named tuple parsed from the provided payload.
 
         If the provided payload is not the same length as what is implied by the format string
         then a ValueError is raised.
@@ -364,8 +365,8 @@ class Cls:
         return self.name, name, nt
 
 
-class Parser:
-    """A lightweight UBX message parser.
+class Parser(object):
+    u"""A lightweight UBX message parser.
 
     This class is designed to contain a set of message classes, when a stream is passed via the `receive_from`
     method the stream is read until the PREFIX is found, the message type is matched to the registered class
@@ -382,22 +383,22 @@ class Parser:
     UBX packets from the device. The typical way to do this would be a serial package like pyserial, see the
     examples file.
     """
-    PREFIX = bytes((0xB5, 0x62))
+    PREFIX = str((0xB5, 0x62))
 
-    def __init__(self, classes: List[Cls]):
-        self._input_buffer = b''
+    def __init__(self, classes):
+        self._input_buffer = ''
 
         self.classes = {}
         for cls in classes:
             self.classes[cls._id] = cls
 
-    def register_cls(self, cls: Cls):
-        """Register a message  class."""
+    def register_cls(self, cls):
+        u"""Register a message  class."""
         self.classes[cls.id_] = cls
 
 
-    def receive_from(self, stream, skippreamble = False, ignoreunsupported = False) -> namedtuple:
-        """Receive a message from a stream and return as a namedtuple.
+    def receive_from(self, stream, skippreamble = False, ignoreunsupported = False):
+        u"""Receive a message from a stream and return as a namedtuple.
         raise IOError or ValueError on errors.
         """
         while not(skippreamble):
@@ -411,46 +412,46 @@ class Parser:
 
 
         if len(buff) != 4:
-            raise IOError("A stream read returned {} bytes, expected 4 bytes".format(len(buff)))
+            raise IOError(u"A stream read returned {} bytes, expected 4 bytes".format(len(buff)))
 
         # convert them into the packet descriptors
-        msg_cls, msg_id, length = struct.unpack('BBH', buff)
+        msg_cls, msg_id, length = struct.unpack(u'BBH', buff)
 
         # check the packet validity
         if msg_cls not in self.classes:
             if ignoreunsupported:
                 return (None, None, None)
             else:
-                raise ValueError("Received message id of {:x} in unsupported class {:x}".format(msg_id, msg_cls))
+                raise ValueError(u"Received message id of {:x} in unsupported class {:x}".format(msg_id, msg_cls))
 
         if msg_id not in self.classes[msg_cls]:
             if ignoreunsupported:
                 return (None, None, None)
             else:
-                raise ValueError("Received unsupported message id of {:x} in class {:x}".format(msg_id, msg_cls))
+                raise ValueError(u"Received unsupported message id of {:x} in class {:x}".format(msg_id, msg_cls))
 
         # Read the payload
         buff += stream.read(length)
         if len(buff) != (4 + length):
-            raise IOError("A stream read returned {} bytes, expected {} bytes".format(
+            raise IOError(u"A stream read returned {} bytes, expected {} bytes".format(
                 len(buff), 4 + length))
 
         # Read the checksum
         checksum_sup = stream.read(2)
         if len(checksum_sup) != 2:
-            raise IOError("A stream read returned {} bytes, expected 2 bytes".format(len(buff)))
+            raise IOError(u"A stream read returned {} bytes, expected 2 bytes".format(len(buff)))
 
         checksum_cal = self._generate_fletcher_checksum(buff)
         if checksum_cal != checksum_sup:
-            raise ValueError("Checksum mismatch. Calculated {:x} {:x}, received {:x} {:x}".format(
+            raise ValueError(u"Checksum mismatch. Calculated {:x} {:x}, received {:x} {:x}".format(
                 checksum_cal[0], checksum_cal[1], checksum_sup[0], checksum_sup[1]
             ))
 
         return self.classes[msg_cls].parse(msg_id, buff[4:])
 
     @staticmethod
-    def _read_until(stream, terminator: bytes, size=None):
-        """Read from the stream until the terminator byte/s are read.
+    def _read_until(stream, terminator, size=None):
+        u"""Read from the stream until the terminator byte/s are read.
         Return the bytes read including the termination bytes.
         """
         term_len = len(terminator)
@@ -466,19 +467,19 @@ class Parser:
             else:
                 break
 
-        return bytes(line)
+        return str(line)
 
     @staticmethod
-    def _generate_fletcher_checksum(payload: bytes) -> bytes:
-        """Return the checksum for the provided payload"""
+    def _generate_fletcher_checksum(payload):
+        u"""Return the checksum for the provided payload"""
         check_a = 0
         check_b = 0
 
         for char in payload:
-            check_a += char
+            check_a += ord(char)
             check_a &= 0xFF
 
             check_b += check_a
             check_b &= 0xFF
 
-        return bytes((check_a, check_b))
+        return str((check_a, check_b))
