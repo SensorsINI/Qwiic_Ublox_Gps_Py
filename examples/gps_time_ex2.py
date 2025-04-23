@@ -46,12 +46,15 @@ def run():
         while True:
             try:
                 gps_time = gps.date_time()
-                print("{}/{}/{}".format(gps_time.day, gps_time.month,
-                                          gps_time.year))
-                print("UTC Time {}:{}:{}".format(gps_time.hour, gps_time.min,
-                                          gps_time.sec))
-                print("Valid date:{}\nValid Time:{}".format(gps_time.valid.validDate, 
-                                                             gps_time.valid.validTime))
+                if gps_time is None:
+                    print("None returned")
+                else:
+                    print("{}/{}/{}".format(gps_time.day, gps_time.month,
+                                              gps_time.year))
+                    print("UTC Time {}:{}:{}".format(gps_time.hour, gps_time.min,
+                                              gps_time.sec))
+                    print("Valid date:{}\nValid Time:{}".format(gps_time.valid.validDate, 
+                                                                 gps_time.valid.validTime))
             except (ValueError, IOError) as err:
                 print(err)
 
